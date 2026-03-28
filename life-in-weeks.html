@@ -1,0 +1,1875 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Life Weeks">
+<meta name="theme-color" content="#2a2818" id="meta-theme">
+<title>Life in Weeks</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon.svg">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js');
+    });
+  }
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+  /* ═══════════════════════════════════════
+     THEME DEFINITIONS
+     ═══════════════════════════════════════ */
+
+  /* Theme 1: Beige Black (가시성 개선) */
+  :root, [data-theme="warm"] {
+    --bg: #13100d;
+    --surface: #1e1a16;
+    --border: #2e2820;
+    --text-primary: #f0ebe3;
+    --text-secondary: #9e9488;
+    --text-muted: #5a5248;
+    --accent: #d4a574;
+    --accent-dim: rgba(212, 165, 116, 0.18);
+    --remaining: #28231d;
+    --current: #f5d4a8;
+    --decade-line: rgba(212, 165, 116, 0.12);
+    --lived-r: 212; --lived-g: 165; --lived-b: 116;
+    --memo-dot: #ffffff;
+    --overlay-bg: rgba(0, 0, 0, 0.75);
+    --error: #c06848;
+    --save-btn-text: #13100d;
+    --glow-radial: rgba(212, 165, 116, 0.04);
+    --slider-shadow: rgba(212, 165, 116, 0.35);
+    --meta-theme: #13100d;
+  }
+
+  /* Theme 2: Beige White */
+  [data-theme="light"] {
+    --bg: #f5f2ed;
+    --surface: #ffffff;
+    --border: #e0dbd4;
+    --text-primary: #2a2520;
+    --text-secondary: #8a8278;
+    --text-muted: #c4bdb4;
+    --accent: #9a6b45;
+    --accent-dim: rgba(154, 107, 69, 0.1);
+    --remaining: #e8e4de;
+    --current: #6b4525;
+    --decade-line: rgba(154, 107, 69, 0.08);
+    --lived-r: 154; --lived-g: 107; --lived-b: 69;
+    --memo-dot: #2a2520;
+    --overlay-bg: rgba(245, 242, 237, 0.85);
+    --error: #b04030;
+    --save-btn-text: #ffffff;
+    --glow-radial: rgba(154, 107, 69, 0.04);
+    --slider-shadow: rgba(154, 107, 69, 0.25);
+    --meta-theme: #f5f2ed;
+  }
+
+  /* Theme 3: Sand Olive (샌드 올리브) */
+  [data-theme="olive"] {
+    --bg: #faf7f0;
+    --surface: #f2ede0;
+    --border: #d8d0b8;
+    --text-primary: #2a2818;
+    --text-secondary: #6a7040;
+    --text-muted: #b0aa88;
+    --accent: #6b7a40;
+    --accent-dim: rgba(107, 122, 64, 0.12);
+    --remaining: #e4dfc8;
+    --current: #3d5220;
+    --decade-line: rgba(107, 122, 64, 0.1);
+    --lived-r: 138; --lived-g: 154; --lived-b: 80;
+    --memo-dot: #3d5220;
+    --overlay-bg: rgba(250, 247, 240, 0.88);
+    --error: #b04030;
+    --save-btn-text: #ffffff;
+    --glow-radial: rgba(107, 122, 64, 0.04);
+    --slider-shadow: rgba(107, 122, 64, 0.25);
+    --meta-theme: #faf7f0;
+  }
+
+  /* Theme 4: Slate Rose (슬레이트 로즈) */
+  [data-theme="rose"] {
+    --bg: #1c1a22;
+    --surface: #252230;
+    --border: #332f40;
+    --text-primary: #f0e8f0;
+    --text-secondary: #a090b0;
+    --text-muted: #5a4f68;
+    --accent: #e8b4c8;
+    --accent-dim: rgba(232, 180, 200, 0.15);
+    --remaining: #2a2532;
+    --current: #f0c8d8;
+    --decade-line: rgba(200, 122, 154, 0.1);
+    --lived-r: 200; --lived-g: 122; --lived-b: 154;
+    --memo-dot: #ffffff;
+    --overlay-bg: rgba(28, 26, 34, 0.82);
+    --error: #e06060;
+    --save-btn-text: #1c1a22;
+    --glow-radial: rgba(200, 122, 154, 0.05);
+    --slider-shadow: rgba(200, 122, 154, 0.35);
+    --meta-theme: #1c1a22;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.4s, color 0.4s;
+  }
+
+  /* ═══════════════════════════════════════
+     PHASE 1: BIRTH DATE INPUT
+     ═══════════════════════════════════════ */
+
+  #phase-input {
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  #phase-input::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 50% 40%, var(--glow-radial) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .input-container {
+    text-align: center;
+    max-width: 360px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  .brand-mark {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 3rem;
+  }
+
+  .input-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: clamp(2rem, 8vw, 3.2rem);
+    line-height: 1.15;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+  }
+
+  .input-subtitle {
+    font-size: 0.82rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    margin-bottom: 3rem;
+    letter-spacing: 0.02em;
+  }
+
+  .date-input-group {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+
+  .date-field {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 400;
+    text-align: center;
+    padding: 1rem 0.5rem;
+    outline: none;
+    transition: border-color 0.3s, box-shadow 0.3s, background 0.4s, color 0.4s;
+    -webkit-appearance: none;
+  }
+
+  .date-field:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  .date-field::placeholder { color: var(--text-muted); font-weight: 300; }
+  .date-field.year { width: 5.5rem; }
+  .date-field.month, .date-field.day { width: 4rem; }
+
+  .date-separator {
+    display: flex;
+    align-items: center;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    font-weight: 300;
+  }
+
+  .lifespan-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 300;
+  }
+
+  .lifespan-selector label { letter-spacing: 0.03em; }
+
+  .lifespan-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 120px;
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    outline: none;
+  }
+
+  .lifespan-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--slider-shadow);
+  }
+
+  .lifespan-value {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    min-width: 2.5rem;
+    text-align: left;
+  }
+
+  .submit-btn {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 400;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    padding: 1rem 3rem;
+    border-radius: 60px;
+    cursor: pointer;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .submit-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.4s;
+    border-radius: inherit;
+  }
+
+  .submit-btn:hover::before,
+  .submit-btn:active::before { opacity: 0.1; }
+  .submit-btn:active { transform: scale(0.97); }
+
+  .error-msg {
+    color: var(--error);
+    font-size: 0.75rem;
+    margin-top: 1rem;
+    min-height: 1.2rem;
+    font-weight: 300;
+  }
+
+  /* ─── THEME PICKER (input phase) ─── */
+  .theme-picker-input {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 5;
+  }
+
+  /* ─── IMPORT BUTTON (input phase) ─── */
+  .import-btn-input {
+    position: absolute;
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 5;
+  }
+
+  .import-btn-input button {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.45rem 0.7rem;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .import-btn-input button:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+  }
+
+  /* ═══════════════════════════════════════
+     THEME TOGGLE (shared)
+     ═══════════════════════════════════════ */
+
+  .theme-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .theme-dot {
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    transition: border-color 0.3s, transform 0.2s, box-shadow 0.3s;
+    position: relative;
+  }
+
+  .theme-dot:hover { transform: scale(1.15); }
+  .theme-dot.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px var(--accent-dim);
+  }
+
+  .theme-dot[data-theme="warm"] { background: linear-gradient(135deg, #13100d 50%, #d4a574 50%); }
+  .theme-dot[data-theme="light"] { background: linear-gradient(135deg, #f5f2ed 50%, #9a6b45 50%); }
+  .theme-dot[data-theme="olive"] { background: linear-gradient(135deg, #faf7f0 50%, #6b7a40 50%); }
+  .theme-dot[data-theme="rose"] { background: linear-gradient(135deg, #1c1a22 50%, #e8b4c8 50%); }
+
+  /* ═══════════════════════════════════════
+     PHASE 2: GRID VISUALIZATION
+     ═══════════════════════════════════════ */
+
+  #phase-grid {
+    display: none;
+    min-height: 100dvh;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .grid-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: linear-gradient(to bottom, var(--bg) 60%, transparent);
+    padding: 1.2rem 1.2rem 1.8rem;
+    transition: background 0.4s;
+  }
+
+  .grid-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .grid-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .stat-lived {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.8rem;
+    font-weight: 300;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 0.65rem;
+    font-weight: 300;
+    color: var(--text-secondary);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .stat-remaining {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+  }
+
+  /* Header right controls */
+  .header-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+  }
+
+  .header-controls-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+  }
+
+  .ctrl-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.65rem;
+    border-radius: 16px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.3s;
+    white-space: nowrap;
+  }
+
+  .ctrl-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-secondary);
+  }
+
+  .autosave-indicator {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+    text-align: right;
+    min-height: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+
+  .autosave-indicator.show { opacity: 1; }
+
+  .grid-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0 0.8rem 2rem;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .grid-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .decade-label {
+    position: absolute;
+    left: -2px;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    transform: translateY(-50%);
+    pointer-events: none;
+  }
+
+  .weeks-canvas {
+    display: block;
+    width: 100%;
+    cursor: crosshair;
+  }
+
+  /* TOOLTIP */
+  .tooltip {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.9rem;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s, background 0.4s, border-color 0.4s;
+    z-index: 100;
+    max-width: 200px;
+  }
+
+  .tooltip.visible { opacity: 1; }
+
+  .tooltip-age {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1rem;
+    color: var(--accent);
+  }
+
+  .tooltip-date {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    margin-top: 0.15rem;
+  }
+
+  .tooltip-memo-hint {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-top: 0.3rem;
+    font-style: italic;
+  }
+
+  /* PROGRESS BAR */
+  .progress-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 20;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--current));
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* ═══════════════════════════════════════
+     MEMO MODAL
+     ═══════════════════════════════════════ */
+
+  .memo-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--overlay-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 200;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .memo-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .memo-sheet {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    max-width: 480px;
+    max-height: 70dvh;
+    display: flex;
+    flex-direction: column;
+    transform: translateY(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .memo-overlay.open .memo-sheet { transform: translateY(0); }
+
+  .memo-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  .memo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.4rem 0.6rem;
+    flex-shrink: 0;
+  }
+
+  .memo-week-info { display: flex; flex-direction: column; gap: 0.1rem; }
+
+  .memo-week-age {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    font-weight: 400;
+    color: var(--accent);
+  }
+
+  .memo-week-date {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 300;
+  }
+
+  .memo-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+  .memo-delete-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.2s, background 0.2s;
+    display: none;
+  }
+
+  .memo-delete-btn.has-memo { display: block; }
+  .memo-delete-btn:hover, .memo-delete-btn:active {
+    color: var(--error);
+    background: rgba(176, 96, 64, 0.1);
+  }
+
+  .memo-close-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 1rem; line-height: 1;
+    transition: border-color 0.2s;
+  }
+
+  .memo-close-btn:hover { border-color: var(--text-secondary); }
+
+  .memo-body {
+    padding: 0 1.4rem 1.4rem;
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  .memo-textarea {
+    width: 100%;
+    min-height: 120px;
+    max-height: 40dvh;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 300;
+    line-height: 1.7;
+    resize: none;
+    outline: none;
+    letter-spacing: 0.01em;
+  }
+
+  .memo-textarea::placeholder { color: var(--text-muted); font-style: italic; }
+
+  .memo-save-row { padding: 0 1.4rem 1.2rem; flex-shrink: 0; }
+
+  .memo-save-btn {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    color: var(--save-btn-text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.9rem;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+
+  .memo-save-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  /* TRANSITIONS */
+  .fade-out { animation: fadeOut 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+  @keyframes fadeOut { to { opacity: 0; transform: translateY(-20px); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* SAFE AREA */
+  @supports (padding-bottom: env(safe-area-inset-bottom)) {
+    .grid-scroll-area { padding-bottom: calc(2rem + env(safe-area-inset-bottom)); }
+    .progress-bar { bottom: env(safe-area-inset-bottom); }
+  }
+
+  /* Hidden file input */
+  #import-file { display: none; }
+
+  /* ═══════════════════════════════════════
+     VIEW TOGGLE (주 / 년)
+     ═══════════════════════════════════════ */
+  .view-toggle {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+
+  .view-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.7rem;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.25s;
+    white-space: nowrap;
+  }
+
+  .view-toggle-btn.active {
+    background: var(--accent);
+    color: var(--save-btn-text);
+  }
+
+  /* ═══════════════════════════════════════
+     YEAR VIEW
+     ═══════════════════════════════════════ */
+  #year-view-container {
+    display: none;
+  }
+
+  .year-view-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0 0.8rem;
+  }
+
+  .year-view-back {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: 14px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+
+  .year-view-back:hover { border-color: var(--accent); color: var(--accent); }
+
+  .year-view-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 300;
+  }
+
+  /* Year grid canvas */
+  #year-canvas {
+    display: block;
+    width: 100%;
+    cursor: crosshair;
+  }
+
+  /* Week drill-down */
+  #week-drilldown-container {
+    display: none;
+  }
+
+  .week-drilldown-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0 0.8rem;
+  }
+
+  .week-drilldown-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 300;
+  }
+
+  /* 버튼 그리드 */
+  .dd-week-grid {
+    display: grid;
+    grid-template-columns: repeat(13, 1fr);
+    gap: 3px;
+  }
+
+  .dd-week-btn {
+    aspect-ratio: 1;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    transition: transform 0.12s, box-shadow 0.12s;
+  }
+
+  .dd-week-btn:active { transform: scale(0.82); }
+
+  /* 살아온 주 — 초반은 연하게, 갈수록 진하게 (캔버스 그라데이션 재현) */
+  .dd-week-btn.lived {
+    background: rgba(var(--lived-r), var(--lived-g), var(--lived-b), 0.55);
+  }
+  .dd-week-btn.lived-mid {
+    background: rgba(var(--lived-r), var(--lived-g), var(--lived-b), 0.72);
+  }
+  .dd-week-btn.lived-late {
+    background: rgba(var(--lived-r), var(--lived-g), var(--lived-b), 0.88);
+  }
+
+  /* 현재 주 — 글로우 */
+  .dd-week-btn.current {
+    background: var(--current);
+    box-shadow: 0 0 10px 2px rgba(var(--lived-r), var(--lived-g), var(--lived-b), 0.5);
+  }
+
+  /* 미래 주 */
+  .dd-week-btn.future {
+    background: var(--remaining);
+  }
+
+  .dd-month-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.9);
+    pointer-events: none;
+    line-height: 1;
+  }
+
+  .dd-week-btn.future .dd-month-label {
+    color: var(--accent);
+    opacity: 0.8;
+  }
+
+  .dd-memo-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--memo-dot);
+    pointer-events: none;
+    opacity: 0.9;
+  }
+</style>
+</head>
+<body data-theme="warm">
+
+<!-- PHASE 1 -->
+<div id="phase-input">
+  <div class="import-btn-input">
+    <button id="import-btn-p1">불러오기</button>
+  </div>
+  <div class="theme-picker-input">
+    <div class="theme-dots" id="theme-dots-p1">
+      <div class="theme-dot active" data-theme="warm" title="베이지 블랙"></div>
+      <div class="theme-dot" data-theme="light" title="베이지 화이트"></div>
+      <div class="theme-dot" data-theme="olive" title="샌드 올리브"></div>
+      <div class="theme-dot" data-theme="rose" title="슬레이트 로즈"></div>
+    </div>
+  </div>
+  <div class="input-container">
+    <div class="brand-mark">Life in Weeks</div>
+    <h1 class="input-title">당신의 시간</h1>
+    <p class="input-subtitle">생년월일을 입력하세요</p>
+
+    <div class="date-input-group">
+      <input type="text" id="year" class="date-field year" placeholder="YYYY" maxlength="4" inputmode="numeric" autocomplete="bday-year">
+      <span class="date-separator">/</span>
+      <input type="text" id="month" class="date-field month" placeholder="MM" maxlength="2" inputmode="numeric" autocomplete="bday-month">
+      <span class="date-separator">/</span>
+      <input type="text" id="day" class="date-field day" placeholder="DD" maxlength="2" inputmode="numeric" autocomplete="bday-day">
+    </div>
+
+    <div class="lifespan-selector">
+      <label>기대수명</label>
+      <input type="range" id="lifespan" class="lifespan-slider" min="60" max="100" value="80">
+      <span id="lifespan-val" class="lifespan-value">80</span>
+    </div>
+
+    <button class="submit-btn" id="go-btn">시각화</button>
+    <div class="error-msg" id="error"></div>
+  </div>
+</div>
+
+<!-- PHASE 2 -->
+<div id="phase-grid">
+  <div class="grid-header">
+    <div class="grid-top-row">
+      <div class="grid-stats">
+        <div class="stat-lived" id="stat-lived"></div>
+        <div class="stat-label">주를 살았습니다</div>
+        <div class="stat-remaining" id="stat-remaining"></div>
+      </div>
+      <div class="header-controls">
+        <div class="header-controls-row">
+          <div class="theme-dots" id="theme-dots-p2">
+            <div class="theme-dot active" data-theme="warm"></div>
+            <div class="theme-dot" data-theme="light"></div>
+            <div class="theme-dot" data-theme="olive"></div>
+            <div class="theme-dot" data-theme="rose"></div>
+          </div>
+        </div>
+        <div class="header-controls-row">
+          <div class="view-toggle">
+            <button class="view-toggle-btn active" id="view-week-btn">주</button>
+            <button class="view-toggle-btn" id="view-year-btn">년</button>
+          </div>
+        </div>
+        <div class="header-controls-row">
+          <button class="ctrl-btn" id="export-btn">저장</button>
+          <button class="ctrl-btn" id="import-btn-p2">불러오기</button>
+          <button class="ctrl-btn" id="reset-btn">다시</button>
+        </div>
+        <div class="autosave-indicator" id="autosave-indicator">자동저장 완료</div>
+      </div>
+    </div>
+  </div>
+  <div class="grid-scroll-area">
+    <!-- 주 단위 뷰 -->
+    <div class="grid-wrapper" id="grid-wrapper">
+      <canvas class="weeks-canvas" id="weeks-canvas"></canvas>
+    </div>
+    <!-- 년 단위 뷰 -->
+    <div id="year-view-container">
+      <div class="grid-wrapper" id="year-grid-wrapper">
+        <div class="year-view-header">
+          <span class="year-view-title">연도별 보기</span>
+        </div>
+        <canvas id="year-canvas"></canvas>
+      </div>
+    </div>
+    <!-- 년 클릭 → 주 드릴다운 뷰 -->
+    <div id="week-drilldown-container">
+      <div class="grid-wrapper" id="drilldown-grid-wrapper">
+        <div class="week-drilldown-header">
+          <button class="year-view-back" id="drilldown-back-btn">← 연도</button>
+          <span class="week-drilldown-title" id="drilldown-title"></span>
+        </div>
+        <div class="dd-week-grid" id="dd-week-grid"></div>
+      </div>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip">
+  <div class="tooltip-age" id="tooltip-age"></div>
+  <div class="tooltip-date" id="tooltip-date"></div>
+  <div class="tooltip-memo-hint" id="tooltip-memo-hint"></div>
+</div>
+
+<!-- MEMO MODAL -->
+<div class="memo-overlay" id="memo-overlay">
+  <div class="memo-sheet">
+    <div class="memo-handle"></div>
+    <div class="memo-header">
+      <div class="memo-week-info">
+        <div class="memo-week-age" id="memo-week-age"></div>
+        <div class="memo-week-date" id="memo-week-date"></div>
+      </div>
+      <div class="memo-actions">
+        <button class="memo-delete-btn" id="memo-delete-btn">삭제</button>
+        <button class="memo-close-btn" id="memo-close-btn">×</button>
+      </div>
+    </div>
+    <div class="memo-body">
+      <textarea class="memo-textarea" id="memo-textarea" placeholder="이 주에 무슨 일이 있었나요..."></textarea>
+    </div>
+    <div class="memo-save-row">
+      <button class="memo-save-btn" id="memo-save-btn">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden file input for import -->
+<input type="file" id="import-file" accept=".json">
+
+<script>
+(function() {
+  const WEEKS_PER_YEAR = 52;
+  const MS_PER_WEEK = 7 * 24 * 60 * 60 * 1000;
+
+  // ─── ELEMENTS ───
+  const $ = id => document.getElementById(id);
+  const $input = $('phase-input');
+  const $grid = $('phase-grid');
+  const $year = $('year');
+  const $month = $('month');
+  const $day = $('day');
+  const $lifespan = $('lifespan');
+  const $lifespanVal = $('lifespan-val');
+  const $goBtn = $('go-btn');
+  const $error = $('error');
+  const $canvas = $('weeks-canvas');
+  const $tooltip = $('tooltip');
+  const $tooltipAge = $('tooltip-age');
+  const $tooltipDate = $('tooltip-date');
+  const $tooltipMemoHint = $('tooltip-memo-hint');
+  const $statLived = $('stat-lived');
+  const $statRemaining = $('stat-remaining');
+  const $progressFill = $('progress-fill');
+  const $resetBtn = $('reset-btn');
+  const $gridWrapper = $('grid-wrapper');
+  const $memoOverlay = $('memo-overlay');
+  const $memoWeekAge = $('memo-week-age');
+  const $memoWeekDate = $('memo-week-date');
+  const $memoTextarea = $('memo-textarea');
+  const $memoSaveBtn = $('memo-save-btn');
+  const $memoCloseBtn = $('memo-close-btn');
+  const $memoDeleteBtn = $('memo-delete-btn');
+  const $exportBtn = $('export-btn');
+  const $importFile = $('import-file');
+  const $autosaveInd = $('autosave-indicator');
+  const $viewWeekBtn = $('view-week-btn');
+  const $viewYearBtn = $('view-year-btn');
+  const $yearViewContainer = $('year-view-container');
+  const $yearCanvas = $('year-canvas');
+  const $yearGridWrapper = $('year-grid-wrapper');
+  const $drilldownContainer = $('week-drilldown-container');
+  const $ddWeekGrid = $('dd-week-grid');
+  const $drilldownTitle = $('drilldown-title');
+  const $drilldownBack = $('drilldown-back-btn');
+
+  let birthDate, lifespanYears, totalWeeks, livedWeeks;
+  let cellSize, gap, cols, offsetX, offsetY;
+  let dpr = window.devicePixelRatio || 1;
+  let currentMemoWeek = null;
+  let autosaveTimer = null;
+  let currentView = 'week';
+  let drilldownYear = null;
+
+  // Year view canvas state
+  let yCellSize, yGap, yOffsetX, yOffsetY, yCols, yRows;
+
+  // ─── STORAGE HELPERS ───
+  function getMemos() {
+    try { return JSON.parse(localStorage.getItem('liw-memos')) || {}; } catch { return {}; }
+  }
+  function saveMemos(memos) {
+    localStorage.setItem('liw-memos', JSON.stringify(memos));
+    scheduleAutosave();
+  }
+  function getData() {
+    try { return JSON.parse(localStorage.getItem('liw-data')); } catch { return null; }
+  }
+  function getTheme() {
+    const t = localStorage.getItem('liw-theme') || 'warm';
+    if (t === 'dark' || t === 'mint') return 'warm';
+    return t;
+  }
+
+  // ─── THEME ───
+  function applyTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    localStorage.setItem('liw-theme', theme);
+    const validThemes = ['warm', 'light', 'olive', 'rose'];
+    const t = validThemes.includes(theme) ? theme : 'warm';
+    const metaColors = { warm: '#13100d', light: '#f5f2ed', olive: '#faf7f0', rose: '#1c1a22' };
+    document.getElementById('meta-theme').setAttribute('content', metaColors[t] || '#13100d');
+    document.querySelectorAll('.theme-dot').forEach(d => {
+      d.classList.toggle('active', d.getAttribute('data-theme') === theme);
+    });
+    if ($grid.style.display !== 'none' && birthDate) {
+      if (currentView === 'week') renderCanvas();
+      else if (currentView === 'year') renderYearCanvas();
+      else if (currentView === 'drilldown') renderDrilldownGrid();
+      // 주단위 뷰가 아닐 때는 switchView('week') 시점에 renderCanvas() 호출됨
+    }
+  }
+
+  // Bind theme dots
+  document.querySelectorAll('.theme-dot').forEach(dot => {
+    dot.addEventListener('click', () => applyTheme(dot.getAttribute('data-theme')));
+  });
+
+  // Init theme
+  applyTheme(getTheme());
+
+  // ─── AUTOSAVE ───
+  function scheduleAutosave() {
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(() => {
+      // Already saved to localStorage, just show indicator
+      $autosaveInd.classList.add('show');
+      setTimeout(() => $autosaveInd.classList.remove('show'), 2000);
+    }, 500);
+  }
+
+  // ─── JSON EXPORT ───
+  function exportJSON() {
+    const now = new Date();
+    const pad = (n, l = 2) => String(n).padStart(l, '0');
+    const timestamp = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+
+    const data = {
+      version: 1,
+      exportedAt: now.toISOString(),
+      settings: getData(),
+      theme: getTheme(),
+      memos: getMemos()
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `life-in-weeks_${timestamp}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ─── JSON IMPORT ───
+  function importJSON(file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (!data.settings || !data.memos) {
+          alert('올바른 Life in Weeks 파일이 아닙니다.');
+          return;
+        }
+
+        // Restore settings
+        localStorage.setItem('liw-data', JSON.stringify(data.settings));
+        localStorage.setItem('liw-memos', JSON.stringify(data.memos));
+        if (data.theme) {
+          applyTheme(data.theme);
+        }
+
+        // Reload fields
+        $year.value = data.settings.y;
+        $month.value = data.settings.m;
+        $day.value = data.settings.d;
+        $lifespan.value = data.settings.l;
+        $lifespanVal.textContent = data.settings.l;
+
+        // If on grid, re-render; if on input, auto-submit
+        if ($grid.style.display !== 'none') {
+          submit();
+        } else {
+          submit();
+        }
+      } catch {
+        alert('파일을 읽을 수 없습니다.');
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  $exportBtn.addEventListener('click', exportJSON);
+  $('import-btn-p1').addEventListener('click', () => $importFile.click());
+  $('import-btn-p2').addEventListener('click', () => $importFile.click());
+  $importFile.addEventListener('change', e => {
+    if (e.target.files[0]) {
+      importJSON(e.target.files[0]);
+      e.target.value = '';
+    }
+  });
+
+  // ─── INPUT PHASE ───
+  [$year, $month, $day].forEach((field, i, arr) => {
+    field.addEventListener('input', () => {
+      field.value = field.value.replace(/\D/g, '');
+      if (field.value.length === parseInt(field.maxLength) && i < arr.length - 1) {
+        arr[i + 1].focus();
+      }
+    });
+  });
+
+  $lifespan.addEventListener('input', () => {
+    $lifespanVal.textContent = $lifespan.value;
+  });
+
+  const saved = getData();
+  if (saved) {
+    $year.value = saved.y;
+    $month.value = saved.m;
+    $day.value = saved.d;
+    $lifespan.value = saved.l;
+    $lifespanVal.textContent = saved.l;
+  }
+
+  $goBtn.addEventListener('click', submit);
+  $resetBtn.addEventListener('click', () => {
+    $grid.classList.add('fade-out');
+    setTimeout(() => {
+      $grid.style.display = 'none';
+      $grid.classList.remove('fade-out');
+      $input.style.display = 'flex';
+      $input.classList.add('fade-in');
+    }, 450);
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && $input.style.display !== 'none') submit();
+  });
+
+  function submit() {
+    $error.textContent = '';
+    const y = parseInt($year.value);
+    const m = parseInt($month.value);
+    const d = parseInt($day.value);
+    lifespanYears = parseInt($lifespan.value);
+
+    if (!y || !m || !d || m < 1 || m > 12 || d < 1 || d > 31) {
+      $error.textContent = '올바른 생년월일을 입력하세요';
+      return;
+    }
+
+    birthDate = new Date(y, m - 1, d);
+    if (birthDate > new Date()) {
+      $error.textContent = '미래 날짜는 입력할 수 없습니다';
+      return;
+    }
+
+    localStorage.setItem('liw-data', JSON.stringify({ y: $year.value, m: $month.value, d: $day.value, l: lifespanYears }));
+
+    totalWeeks = lifespanYears * WEEKS_PER_YEAR;
+    livedWeeks = Math.floor((Date.now() - birthDate.getTime()) / MS_PER_WEEK);
+    if (livedWeeks < 0) livedWeeks = 0;
+    if (livedWeeks > totalWeeks) livedWeeks = totalWeeks;
+
+    $input.classList.add('fade-out');
+    setTimeout(() => {
+      $input.style.display = 'none';
+      $input.classList.remove('fade-out');
+      $grid.style.display = 'flex';
+      $grid.classList.add('fade-in');
+      currentView = 'week';
+      $gridWrapper.style.display = 'block';
+      $yearViewContainer.style.display = 'none';
+      $drilldownContainer.style.display = 'none';
+      renderStats();
+      renderCanvas();
+    }, 450);
+  }
+
+  function renderStats() {
+    const remaining = Math.max(0, totalWeeks - livedWeeks);
+    $statLived.textContent = livedWeeks.toLocaleString();
+    $statRemaining.textContent = `남은 주: ${remaining.toLocaleString()}`;
+    $progressFill.style.width = `${(livedWeeks / totalWeeks * 100).toFixed(2)}%`;
+  }
+
+  // ─── CANVAS RENDERING (주 단위) ───
+  function renderCanvas() {
+    const wrapper = $gridWrapper;
+    const wrapperW = wrapper.clientWidth;
+    cols = WEEKS_PER_YEAR;
+    const rows = lifespanYears;
+    const memos = getMemos();
+
+    const cs = getComputedStyle(document.body);
+    const livedR = parseInt(cs.getPropertyValue('--lived-r'));
+    const livedG = parseInt(cs.getPropertyValue('--lived-g'));
+    const livedB = parseInt(cs.getPropertyValue('--lived-b'));
+    const cCurrent = cs.getPropertyValue('--current').trim();
+    const cRemaining = cs.getPropertyValue('--remaining').trim();
+    const cDecadeLine = cs.getPropertyValue('--decade-line').trim();
+    const cMemoDot = cs.getPropertyValue('--memo-dot').trim();
+
+    gap = Math.max(1, Math.floor(wrapperW / 400));
+    cellSize = Math.max(2, Math.floor((wrapperW - (cols + 1) * gap) / cols));
+    const totalGridW = cols * cellSize + (cols + 1) * gap;
+    offsetX = Math.floor((wrapperW - totalGridW) / 2);
+    offsetY = 0;
+
+    const canvasW = wrapperW;
+    const canvasH = rows * (cellSize + gap) + gap + 4;
+
+    $canvas.width = canvasW * dpr;
+    $canvas.height = canvasH * dpr;
+    $canvas.style.width = canvasW + 'px';
+    $canvas.style.height = canvasH + 'px';
+    wrapper.style.height = canvasH + 'px';
+
+    const ctx = $canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    // Decade lines
+    for (let decade = 10; decade < lifespanYears; decade += 10) {
+      const ly = offsetY + decade * (cellSize + gap) - gap / 2;
+      ctx.fillStyle = cDecadeLine;
+      ctx.fillRect(offsetX, ly, totalGridW, 1);
+    }
+
+    // Cells
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const weekIndex = row * cols + col;
+        const x = offsetX + gap + col * (cellSize + gap);
+        const y = offsetY + gap + row * (cellSize + gap);
+        const r = cellSize > 4 ? 1.5 : 0.5;
+
+        if (weekIndex === livedWeeks) {
+          ctx.shadowColor = cCurrent;
+          ctx.shadowBlur = cellSize * 2;
+          ctx.fillStyle = cCurrent;
+          ctx.beginPath();
+          ctx.roundRect(x, y, cellSize, cellSize, r);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        } else if (weekIndex < livedWeeks) {
+          const progress = weekIndex / totalWeeks;
+          const alpha = 0.3 + progress * 0.55;
+          ctx.fillStyle = `rgba(${livedR},${livedG},${livedB},${alpha})`;
+          ctx.beginPath();
+          ctx.roundRect(x, y, cellSize, cellSize, r);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = cRemaining;
+          ctx.beginPath();
+          ctx.roundRect(x, y, cellSize, cellSize, r);
+          ctx.fill();
+        }
+
+        // Memo dot
+        if (memos[weekIndex]) {
+          const dotR = Math.max(0.8, cellSize * 0.18);
+          ctx.fillStyle = cMemoDot;
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.arc(x + cellSize - dotR - 0.3, y + dotR + 0.3, dotR, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.globalAlpha = 1;
+        }
+      }
+    }
+
+    // Decade labels
+    $gridWrapper.querySelectorAll('.decade-label').forEach(l => l.remove());
+    for (let decade = 10; decade <= lifespanYears; decade += 10) {
+      const label = document.createElement('div');
+      label.className = 'decade-label';
+      label.textContent = decade;
+      label.style.top = (offsetY + decade * (cellSize + gap) - gap / 2) + 'px';
+      $gridWrapper.appendChild(label);
+    }
+  }
+
+  // ─── YEAR VIEW RENDERING ───
+  function renderYearCanvas() {
+    const wrapper = $yearGridWrapper;
+    const wrapperW = wrapper.clientWidth;
+    const memos = getMemos();
+
+    const cs = getComputedStyle(document.body);
+    const livedR = parseInt(cs.getPropertyValue('--lived-r'));
+    const livedG = parseInt(cs.getPropertyValue('--lived-g'));
+    const livedB = parseInt(cs.getPropertyValue('--lived-b'));
+    const cCurrent = cs.getPropertyValue('--current').trim();
+    const cRemaining = cs.getPropertyValue('--remaining').trim();
+    const cMemoDot = cs.getPropertyValue('--memo-dot').trim();
+
+    yCols = 10;
+    yRows = Math.ceil(lifespanYears / yCols);
+    yGap = Math.max(2, Math.floor(wrapperW / 200));
+    yCellSize = Math.floor((wrapperW - (yCols + 1) * yGap) / yCols);
+    const totalGridW = yCols * yCellSize + (yCols + 1) * yGap;
+    yOffsetX = Math.floor((wrapperW - totalGridW) / 2);
+    yOffsetY = 0;
+
+    const canvasW = wrapperW;
+    const canvasH = yOffsetY + yRows * (yCellSize + yGap) + yGap + 4;
+
+    $yearCanvas.width = canvasW * dpr;
+    $yearCanvas.height = canvasH * dpr;
+    $yearCanvas.style.width = canvasW + 'px';
+    $yearCanvas.style.height = canvasH + 'px';
+
+    const ctx = $yearCanvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    const livedYear = Math.floor(livedWeeks / WEEKS_PER_YEAR);
+
+    for (let yr = 0; yr < lifespanYears; yr++) {
+      const row = Math.floor(yr / yCols);
+      const col = yr % yCols;
+      const x = yOffsetX + yGap + col * (yCellSize + yGap);
+      const y = yOffsetY + yGap + row * (yCellSize + yGap);
+      const r = yCellSize > 8 ? 3 : 1;
+
+      let hasMemo = false;
+      for (let w = 0; w < WEEKS_PER_YEAR; w++) {
+        if (memos[yr * WEEKS_PER_YEAR + w]) { hasMemo = true; break; }
+      }
+
+      if (yr === livedYear) {
+        ctx.shadowColor = cCurrent;
+        ctx.shadowBlur = yCellSize * 1.5;
+        ctx.fillStyle = cCurrent;
+        ctx.beginPath();
+        ctx.roundRect(x, y, yCellSize, yCellSize, r);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      } else if (yr < livedYear) {
+        const progress = yr / lifespanYears;
+        const alpha = 0.35 + progress * 0.5;
+        ctx.fillStyle = `rgba(${livedR},${livedG},${livedB},${alpha})`;
+        ctx.beginPath();
+        ctx.roundRect(x, y, yCellSize, yCellSize, r);
+        ctx.fill();
+      } else {
+        ctx.fillStyle = cRemaining;
+        ctx.beginPath();
+        ctx.roundRect(x, y, yCellSize, yCellSize, r);
+        ctx.fill();
+      }
+
+      if (hasMemo) {
+        const dotR = Math.max(1.5, yCellSize * 0.12);
+        ctx.fillStyle = cMemoDot;
+        ctx.globalAlpha = 0.9;
+        ctx.beginPath();
+        ctx.arc(x + yCellSize - dotR - 1, y + dotR + 1, dotR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // 5단위 나이 레이블
+      if (yr % 5 === 0) {
+        const fontSize = Math.max(8, Math.min(yCellSize * 0.32, 13));
+        // 살아온 해 위엔 흰색(또는 밝은 색), 미래/현재 위엔 accent 색
+        const isLivedBlock = yr < livedYear;
+        ctx.fillStyle = isLivedBlock ? 'rgba(255,255,255,0.85)' : cs.getPropertyValue('--accent').trim();
+        ctx.font = `${yr % 10 === 0 ? 600 : 400} ${fontSize}px 'DM Sans', sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.globalAlpha = yr % 10 === 0 ? 0.95 : 0.65;
+        ctx.fillText(yr, x + yCellSize / 2, y + yCellSize / 2);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  // ─── DRILLDOWN 렌더링 (DOM 버튼 방식) ───
+  function renderDrilldownGrid() {
+    if (drilldownYear === null) return;
+    const memos = getMemos();
+    const startWeek = drilldownYear * WEEKS_PER_YEAR;
+
+    $ddWeekGrid.innerHTML = '';
+
+    for (let w = 0; w < WEEKS_PER_YEAR; w++) {
+      const weekIndex = startWeek + w;
+      const weekDate = new Date(birthDate.getTime() + weekIndex * MS_PER_WEEK);
+
+      const btn = document.createElement('button');
+      btn.className = 'dd-week-btn';
+      btn.dataset.week = weekIndex;
+      btn.dataset.w = w;
+      btn.dataset.age = drilldownYear;
+
+      if (weekIndex === livedWeeks) btn.classList.add('current');
+      else if (weekIndex < livedWeeks) {
+        // 해당 연도 52주 안에서의 상대적 위치로 그라데이션
+        if (w < 17) btn.classList.add('lived');
+        else if (w < 35) btn.classList.add('lived-mid');
+        else btn.classList.add('lived-late');
+      }
+      else btn.classList.add('future');
+
+      // 월 시작 레이블
+      const month = weekDate.getMonth();
+      const prevMonth = w > 0
+        ? new Date(birthDate.getTime() + (startWeek + w - 1) * MS_PER_WEEK).getMonth()
+        : -1;
+      if (w === 0 || month !== prevMonth) {
+        const lbl = document.createElement('span');
+        lbl.className = 'dd-month-label';
+        lbl.textContent = month + 1;
+        btn.appendChild(lbl);
+      }
+
+      // 메모 점
+      if (memos[weekIndex]) {
+        const dot = document.createElement('span');
+        dot.className = 'dd-memo-dot';
+        btn.appendChild(dot);
+      }
+
+      $ddWeekGrid.appendChild(btn);
+    }
+  }
+
+  // 그리드 이벤트 — 딱 한 번만 등록
+  $ddWeekGrid.addEventListener('click', e => {
+    const btn = e.target.closest('.dd-week-btn');
+    if (!btn) return;
+    const weekIndex = parseInt(btn.dataset.week);
+    if (weekIndex > livedWeeks) return;
+    const w = parseInt(btn.dataset.w);
+    const age = parseInt(btn.dataset.age);
+    const weekDate = new Date(birthDate.getTime() + weekIndex * MS_PER_WEEK);
+    openMemo({ weekIndex, age, weekOfYear: w + 1, weekDate, isLived: true });
+  });
+
+  $ddWeekGrid.addEventListener('touchend', e => {
+    hideTooltip();
+    const t = e.changedTouches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const btn = el?.closest('.dd-week-btn');
+    if (!btn) return;
+    const weekIndex = parseInt(btn.dataset.week);
+    if (weekIndex > livedWeeks) return;
+    const w = parseInt(btn.dataset.w);
+    const age = parseInt(btn.dataset.age);
+    const weekDate = new Date(birthDate.getTime() + weekIndex * MS_PER_WEEK);
+    openMemo({ weekIndex, age, weekOfYear: w + 1, weekDate, isLived: true });
+    e.preventDefault();
+  }, { passive: false });
+
+  $ddWeekGrid.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const btn = el?.closest('.dd-week-btn');
+    if (btn) showDrilldownTooltip(btn, t);
+    else hideTooltip();
+  }, { passive: true });
+
+  $ddWeekGrid.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY);
+    const btn = el?.closest('.dd-week-btn');
+    if (btn) showDrilldownTooltip(btn, t);
+  }, { passive: true });
+
+  $ddWeekGrid.addEventListener('mousemove', e => {
+    const btn = e.target.closest('.dd-week-btn');
+    if (btn) showDrilldownTooltip(btn, e);
+    else hideTooltip();
+  });
+  $ddWeekGrid.addEventListener('mouseleave', hideTooltip);
+
+  function showDrilldownTooltip(btn, e) {
+    const w = parseInt(btn.dataset.w);
+    const weekIndex = parseInt(btn.dataset.week);
+    const age = parseInt(btn.dataset.age);
+    const weekDate = new Date(birthDate.getTime() + weekIndex * MS_PER_WEEK);
+    if (isNaN(weekDate.getTime())) return;
+    const memos = getMemos();
+    $tooltipAge.textContent = `${age}세 ${w + 1}주차`;
+    $tooltipDate.textContent = weekDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    $tooltipMemoHint.textContent = weekIndex <= livedWeeks
+      ? (memos[weekIndex] ? '메모 있음 · 탭하여 편집' : '탭하여 메모')
+      : '';
+    $tooltip.classList.add('visible');
+    const clientX = e.clientX ?? e.pageX ?? 0;
+    const clientY = e.clientY ?? e.pageY ?? 0;
+    const tw = $tooltip.offsetWidth, th = $tooltip.offsetHeight;
+    let tx = clientX + 12, ty = clientY - th - 8;
+    if (tx + tw > window.innerWidth - 8) tx = clientX - tw - 12;
+    if (ty < 8) ty = clientY + 16;
+    $tooltip.style.left = tx + 'px';
+    $tooltip.style.top = ty + 'px';
+  }
+
+  // ─── VIEW SWITCHING ───
+  function switchView(view) {
+    currentView = view;
+    $gridWrapper.style.display = view === 'week' ? 'block' : 'none';
+    $yearViewContainer.style.display = view === 'year' ? 'block' : 'none';
+    $drilldownContainer.style.display = view === 'drilldown' ? 'block' : 'none';
+    $viewWeekBtn.classList.toggle('active', view === 'week');
+    $viewYearBtn.classList.toggle('active', view === 'year' || view === 'drilldown');
+
+    if (view === 'year') {
+      yCellSize = 0;
+      setTimeout(() => renderYearCanvas(), 10);
+    } else if (view === 'drilldown') {
+      setTimeout(() => renderDrilldownGrid(), 10);
+    } else if (view === 'week') {
+      setTimeout(() => renderCanvas(), 10);
+    }
+  }
+
+  $viewWeekBtn.addEventListener('click', () => switchView('week'));
+  $viewYearBtn.addEventListener('click', () => switchView('year'));
+
+  $drilldownBack.addEventListener('click', () => {
+    drilldownYear = null;
+    switchView('year');
+  });
+
+  // ─── YEAR CANVAS: 클릭 → 드릴다운 ───
+  function getYearFromPos(clientX, clientY) {
+    const rect = $yearCanvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    // 렌더 좌표: x_cell = yOffsetX + yGap + col*(yCellSize+yGap)
+    const col = Math.floor((x - yOffsetX - yGap) / (yCellSize + yGap));
+    const row = Math.floor((y - yOffsetY - yGap) / (yCellSize + yGap));
+    if (col < 0 || col >= yCols || row < 0) return null;
+    const yr = row * yCols + col;
+    if (yr >= lifespanYears) return null;
+    return yr;
+  }
+
+  $yearCanvas.addEventListener('click', e => {
+    const yr = getYearFromPos(e.clientX, e.clientY);
+    if (yr === null) return;
+    drilldownYear = yr;
+    const birthYear = birthDate.getFullYear();
+    $drilldownTitle.textContent = `${birthYear + yr}년 (${yr}세)`;
+    switchView('drilldown');
+  });
+
+  // 연도 뷰 툴팁
+  $yearCanvas.addEventListener('mousemove', e => {
+    const yr = getYearFromPos(e.clientX, e.clientY);
+    if (yr === null) { hideTooltip(); return; }
+    const birthYear = birthDate.getFullYear();
+    const livedYear = Math.floor(livedWeeks / WEEKS_PER_YEAR);
+    const memos = getMemos();
+    let memoCount = 0;
+    for (let w = 0; w < WEEKS_PER_YEAR; w++) {
+      if (memos[yr * WEEKS_PER_YEAR + w]) memoCount++;
+    }
+    $tooltipAge.textContent = `${birthYear + yr}년 · ${yr}세`;
+    $tooltipDate.textContent = yr <= livedYear ? '살아온 해' : '앞으로의 해';
+    $tooltipMemoHint.textContent = yr <= livedYear
+      ? (memoCount > 0 ? `메모 ${memoCount}개 · 클릭하여 주단위 보기` : '클릭하여 주단위 보기')
+      : '';
+    $tooltip.classList.add('visible');
+    const tw = $tooltip.offsetWidth, th = $tooltip.offsetHeight;
+    let tx = e.clientX + 12, ty = e.clientY - th - 8;
+    if (tx + tw > window.innerWidth - 8) tx = e.clientX - tw - 12;
+    if (ty < 8) ty = e.clientY + 16;
+    $tooltip.style.left = tx + 'px';
+    $tooltip.style.top = ty + 'px';
+  });
+  $yearCanvas.addEventListener('mouseleave', hideTooltip);
+
+  let yTouchPos = { x: 0, y: 0 }, yTouchMoved = false, yTouchStartTime = 0;
+  $yearCanvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    yTouchPos = { x: t.clientX, y: t.clientY };
+    yTouchMoved = false;
+    yTouchStartTime = Date.now();
+    const yr = getYearFromPos(t.clientX, t.clientY);
+    if (yr !== null) {
+      const birthYear = birthDate.getFullYear();
+      const livedYear = Math.floor(livedWeeks / WEEKS_PER_YEAR);
+      const memos = getMemos();
+      let memoCount = 0;
+      for (let w = 0; w < WEEKS_PER_YEAR; w++) { if (memos[yr * WEEKS_PER_YEAR + w]) memoCount++; }
+      $tooltipAge.textContent = `${birthYear + yr}년 · ${yr}세`;
+      $tooltipDate.textContent = yr <= livedYear ? '살아온 해' : '앞으로의 해';
+      $tooltipMemoHint.textContent = yr <= livedYear ? (memoCount > 0 ? `메모 ${memoCount}개 · 탭하여 주단위` : '탭하여 주단위 보기') : '';
+      $tooltip.classList.add('visible');
+      const tw = $tooltip.offsetWidth, th = $tooltip.offsetHeight;
+      let tx = t.clientX + 12, ty = t.clientY - th - 8;
+      if (tx + tw > window.innerWidth - 8) tx = t.clientX - tw - 12;
+      if (ty < 8) ty = t.clientY + 16;
+      $tooltip.style.left = tx + 'px';
+      $tooltip.style.top = ty + 'px';
+    }
+  }, { passive: true });
+  $yearCanvas.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - yTouchPos.x) > 5 || Math.abs(t.clientY - yTouchPos.y) > 5) yTouchMoved = true;
+    const yr = getYearFromPos(t.clientX, t.clientY);
+    if (yr !== null) {
+      const birthYear = birthDate.getFullYear();
+      const livedYear = Math.floor(livedWeeks / WEEKS_PER_YEAR);
+      const memos = getMemos();
+      let memoCount = 0;
+      for (let w = 0; w < WEEKS_PER_YEAR; w++) { if (memos[yr * WEEKS_PER_YEAR + w]) memoCount++; }
+      $tooltipAge.textContent = `${birthYear + yr}년 · ${yr}세`;
+      $tooltipDate.textContent = yr <= livedYear ? '살아온 해' : '앞으로의 해';
+      $tooltipMemoHint.textContent = yr <= livedYear ? (memoCount > 0 ? `메모 ${memoCount}개 · 탭하여 주단위` : '탭하여 주단위 보기') : '';
+      $tooltip.classList.add('visible');
+      const tw = $tooltip.offsetWidth, th = $tooltip.offsetHeight;
+      let tx = t.clientX + 12, ty = t.clientY - th - 8;
+      if (tx + tw > window.innerWidth - 8) tx = t.clientX - tw - 12;
+      if (ty < 8) ty = t.clientY + 16;
+      $tooltip.style.left = tx + 'px';
+      $tooltip.style.top = ty + 'px';
+    } else hideTooltip();
+  }, { passive: true });
+  $yearCanvas.addEventListener('touchend', e => {
+    hideTooltip();
+    if (yTouchMoved) return;
+    if (Date.now() - yTouchStartTime < 400) {
+      const yr = getYearFromPos(yTouchPos.x, yTouchPos.y);
+      if (yr === null) return;
+      drilldownYear = yr;
+      const birthYear = birthDate.getFullYear();
+      $drilldownTitle.textContent = `${birthYear + yr}년 (${yr}세)`;
+      switchView('drilldown');
+    }
+  });
+
+  // ─── WEEK FROM POSITION ───
+  function getWeekFromPos(clientX, clientY) {
+    const rect = $canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const col = Math.floor((x - offsetX - gap / 2) / (cellSize + gap));
+    const row = Math.floor((y - offsetY - gap / 2) / (cellSize + gap));
+    if (col < 0 || col >= WEEKS_PER_YEAR || row < 0 || row >= lifespanYears) return null;
+    const weekIndex = row * WEEKS_PER_YEAR + col;
+    const weekDate = new Date(birthDate.getTime() + weekIndex * MS_PER_WEEK);
+    return { weekIndex, age: row, weekOfYear: col + 1, weekDate, isLived: weekIndex <= livedWeeks };
+  }
+
+  // ─── TOOLTIP ───
+  function showTooltip(clientX, clientY, info) {
+    $tooltipAge.textContent = `${info.age}세 ${info.weekOfYear}주차`;
+    $tooltipDate.textContent = info.weekDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const memos = getMemos();
+    $tooltipMemoHint.textContent = info.isLived
+      ? (memos[info.weekIndex] ? '메모 있음 · 탭하여 편집' : '탭하여 메모')
+      : '';
+    $tooltip.classList.add('visible');
+    const tw = $tooltip.offsetWidth, th = $tooltip.offsetHeight;
+    let tx = clientX + 12, ty = clientY - th - 8;
+    if (tx + tw > window.innerWidth - 8) tx = clientX - tw - 12;
+    if (ty < 8) ty = clientY + 16;
+    $tooltip.style.left = tx + 'px';
+    $tooltip.style.top = ty + 'px';
+  }
+  function hideTooltip() { $tooltip.classList.remove('visible'); }
+
+  // ─── MEMO MODAL ───
+  function openMemo(info) {
+    if (!info.isLived) return;
+    currentMemoWeek = info.weekIndex;
+    $memoWeekAge.textContent = `${info.age}세 ${info.weekOfYear}주차`;
+    $memoWeekDate.textContent = info.weekDate.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+    const memos = getMemos();
+    const existing = memos[info.weekIndex] || '';
+    $memoTextarea.value = existing;
+    $memoDeleteBtn.classList.toggle('has-memo', !!existing);
+    $memoOverlay.classList.add('open');
+    setTimeout(() => $memoTextarea.focus(), 400);
+  }
+
+  function closeMemo() {
+    $memoOverlay.classList.remove('open');
+    currentMemoWeek = null;
+  }
+
+  $memoSaveBtn.addEventListener('click', () => {
+    if (currentMemoWeek === null) return;
+    const memos = getMemos();
+    const text = $memoTextarea.value.trim();
+    if (text) memos[currentMemoWeek] = text;
+    else delete memos[currentMemoWeek];
+    saveMemos(memos);
+    closeMemo();
+    if (currentView === 'week') renderCanvas();
+    else if (currentView === 'year') renderYearCanvas();
+    else if (currentView === 'drilldown') renderDrilldownGrid();
+  });
+
+  $memoDeleteBtn.addEventListener('click', () => {
+    if (currentMemoWeek === null) return;
+    const memos = getMemos();
+    delete memos[currentMemoWeek];
+    saveMemos(memos);
+    closeMemo();
+    if (currentView === 'week') renderCanvas();
+    else if (currentView === 'year') renderYearCanvas();
+    else if (currentView === 'drilldown') renderDrilldownGrid();
+  });
+
+  $memoCloseBtn.addEventListener('click', closeMemo);
+  $memoOverlay.addEventListener('click', e => { if (e.target === $memoOverlay) closeMemo(); });
+
+  // ─── CANVAS INTERACTION ───
+  $canvas.addEventListener('mousemove', e => {
+    const info = getWeekFromPos(e.clientX, e.clientY);
+    if (info) showTooltip(e.clientX, e.clientY, info);
+    else hideTooltip();
+  });
+  $canvas.addEventListener('mouseleave', hideTooltip);
+  $canvas.addEventListener('click', e => {
+    const info = getWeekFromPos(e.clientX, e.clientY);
+    if (info && info.isLived) { hideTooltip(); openMemo(info); }
+  });
+
+  let touchStartTime = 0, touchStartPos = { x: 0, y: 0 }, touchMoved = false;
+  $canvas.addEventListener('touchstart', e => {
+    const t = e.touches[0];
+    touchStartTime = Date.now();
+    touchStartPos = { x: t.clientX, y: t.clientY };
+    touchMoved = false;
+    const info = getWeekFromPos(t.clientX, t.clientY);
+    if (info) showTooltip(t.clientX, t.clientY, info);
+  }, { passive: true });
+  $canvas.addEventListener('touchmove', e => {
+    const t = e.touches[0];
+    if (Math.abs(t.clientX - touchStartPos.x) > 8 || Math.abs(t.clientY - touchStartPos.y) > 8) touchMoved = true;
+    const info = getWeekFromPos(t.clientX, t.clientY);
+    if (info) showTooltip(t.clientX, t.clientY, info);
+    else hideTooltip();
+  }, { passive: true });
+  $canvas.addEventListener('touchend', () => {
+    hideTooltip();
+    if (touchMoved) return;
+    if (Date.now() - touchStartTime < 400) {
+      const info = getWeekFromPos(touchStartPos.x, touchStartPos.y);
+      if (info && info.isLived) openMemo(info);
+    }
+  });
+
+  // ─── RESIZE ───
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      if ($grid.style.display !== 'none' && birthDate) {
+        dpr = window.devicePixelRatio || 1;
+        if (currentView === 'week') renderCanvas();
+        else if (currentView === 'year') renderYearCanvas();
+        else if (currentView === 'drilldown') renderDrilldownGrid();
+      }
+    }, 200);
+  });
+
+  if (saved) setTimeout(submit, 300);
+})();
+</script>
+</body>
+</html>
